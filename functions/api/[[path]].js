@@ -27,20 +27,19 @@ export async function onRequest(context){
     const body=await request.json();
     const domainName=body.name;
     
-    // 先获取项目详情，拿到实际的 pages.dev 域名
+    // 获取项目详情
     const projectResp=await fetch(`https://api.cloudflare.com/client/v4/accounts/${finalAccId}/pages/projects/${projectName}`,{
       headers:{'Authorization':`Bearer ${pagesToken}`}
     });
     const projectData=await projectResp.json();
     
+    // 获取正确的 Pages 域名（subdomain 已经包含 .pages.dev）
     let pagesDevDomain=`${projectName}.pages.dev`;
-    if(projectData.success&&projectData.result){
-      // 从项目信息中获取实际的 subdomain 或 canonical_deployment.url
-      if(projectData.result.subdomain){
-        pagesDevDomain=`${projectData.result.subdomain}.pages.dev`;
-      }else if(projectData.result.canonical_deployment?.url){
-        const urlObj=new URL(projectData.result.canonical_deployment.url);
-        pagesDevDomain=urlObj.hostname;
+    if(projectData.success&&projectData.result?.subdomain){
+      pagesDevDomain=projectData.result.subdomain;
+      // 如果 subdomain 不包含 .pages.dev，才加上
+      if(!pagesDevDomain.endsWith('.pages.dev')){
+        pagesDevDomain+='.pages.dev';
       }
     }
     
@@ -73,7 +72,7 @@ export async function onRequest(context){
             name:domainName,
             content:pagesDevDomain,
             proxied:true,
-            comment:`Auto-created for ${projectName}`
+            comment:`Auto for ${projectName}`
           })
         });
         const dnsData=await dnsResp.json();
