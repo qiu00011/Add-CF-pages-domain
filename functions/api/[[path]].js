@@ -1,39 +1,3 @@
-// 新增：获取所有项目（支持分页）
-async function fetchAllProjects(accountId, token) {
-  let allProjects = [];
-  let page = 1;
-  let hasMore = true;
-  
-  while (hasMore) {
-    const resp = await fetch(
-      `https://api.cloudflare.com/client/v4/accounts/${accountId}/pages/projects?per_page=100&page=${page}`,
-      {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      }
-    );
-    
-    const data = await resp.json();
-    
-    if (data.success && data.result) {
-      allProjects = allProjects.concat(data.result);
-      
-      const resultInfo = data.result_info;
-      if (resultInfo && resultInfo.total_pages > page) {
-        page++;
-      } else {
-        hasMore = false;
-      }
-    } else {
-      hasMore = false;
-    }
-  }
-  
-  return allProjects;
-}
-
 export async function onRequest(context){
   const{request,env}=context;
   const url=new URL(request.url);
@@ -84,23 +48,14 @@ export async function onRequest(context){
   const[,accId,projectName,domain]=match;
   const finalAccId=accountId||accId;
   
+  // 获取项目列表 - 简化版，一次性获取100个
   if(!projectName){
-    // 使用新的分页函数获取所有项目
-    const projects = await fetchAllProjects(finalAccId, pagesToken);
-    return new Response(JSON.stringify({
-      success: true,
-      result: projects,
-      result_info: {
-        count: projects.length,
-        total_count: projects.length
-      }
-    }), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      }
-    });
+    return await proxy(
+      `https://api.cloudflare.com/client/v4/accounts/${finalAccId}/pages/projects?per_page=100`,
+      'GET',
+      null,
+      pagesToken
+    );
   }
   
   if(projectName&&!domain&&request.method==='GET'){
