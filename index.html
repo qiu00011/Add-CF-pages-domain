@@ -20,6 +20,7 @@
     .btn{width:100%;padding:12px 14px;border-radius:8px;border:0;cursor:pointer;font-weight:700;color:white;background:linear-gradient(135deg,var(--orange) 0%,#F59D3B 100%);margin-top:10px;}
     .btn:hover{transform:translateY(-1px);}
     .btn.secondary{background:linear-gradient(135deg,#4facfe 0%,#00f2fe 100%);}
+    .btn.success{background:linear-gradient(135deg,#10b981 0%,#059669 100%);}
     .btn.danger{background:linear-gradient(135deg,#f87171 0%,#f43f5e 100%);}
     .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
     .domain-item{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;background:#f9f9f9;margin-bottom:6px;border:1px solid #eee;}
@@ -30,6 +31,8 @@
     .domain-actions button{padding:6px 12px;font-size:12px;border-radius:6px;border:0;cursor:pointer;background:#f87171;color:white;}
     .output{white-space:pre-wrap;background:#111;color:#e5e7eb;padding:12px;border-radius:8px;min-height:100px;font-size:13px;}
     .info{background:#eff6ff;border-left:4px solid #3b82f6;padding:10px;border-radius:6px;font-size:13px;color:#1e40af;margin-bottom:12px;}
+    .btn-group{display:flex;gap:8px;}
+    .btn-group .btn{margin-top:0;}
     @media(max-width:900px){.grid{grid-template-columns:1fr;}}
   </style>
 </head>
@@ -37,14 +40,18 @@
   <div class="container">
     <div class="header">
       <h1>☁️ Cloudflare Pages 域名管理</h1>
-      <p>自动创建 DNS 记录，无需手动验证</p>
+      <p>自动创建 DNS 记录 + 配置保存</p>
     </div>
     <div class="card">
       <div class="section-title">🔑 API 配置</div>
-      <div class="info">💡 需要两个 Token：Pages Token（管理项目）+ Zone Token（创建DNS）</div>
+      <div class="info">💾 配置会保存在 KV 中，下次打开自动加载</div>
       <label>Account ID<input id="accountId" placeholder="你的 Account ID"/></label>
       <label style="margin-top:10px;">Pages API Token<input id="pagesToken" type="password" placeholder="用于管理 Pages 项目"/></label>
       <label style="margin-top:10px;">Zone API Token<input id="zoneToken" type="password" placeholder="用于创建 DNS 记录"/></label>
+      <div class="btn-group" style="margin-top:12px;">
+        <button class="btn success" id="saveConfigBtn" style="flex:1;">💾 保存配置</button>
+        <button class="btn secondary" id="loadConfigBtn" style="flex:1;">📥 加载配置</button>
+      </div>
     </div>
     <div class="grid">
       <div class="card">
@@ -83,9 +90,9 @@
     const removeDomainInput=document.getElementById('removeDomainInput');
     const removeDomainBtn=document.getElementById('removeDomainBtn');
     const refreshDomainsBtn=document.getElementById('refreshDomainsBtn');
+    const saveConfigBtn=document.getElementById('saveConfigBtn');
+    const loadConfigBtn=document.getElementById('loadConfigBtn');
     const output=document.getElementById('output');
-
-    function log(msg){output.textContent+='\n'+msg;}
 
     async function apiCall(path,method='GET',body=null){
       output.textContent='⏳ 请求中...';
@@ -106,6 +113,44 @@
       }catch(e){
         output.textContent='❌ 错误: '+e.message;
         return{ok:false,data:null};
+      }
+    }
+
+    // 保存配置到 KV
+    async function saveConfig(){
+      const config={
+        accountId:accountId.value.trim(),
+        pagesToken:pagesToken.value.trim(),
+        zoneToken:zoneToken.value.trim()
+      };
+      if(!config.accountId||!config.pagesToken||!config.zoneToken){
+        alert('请填写所有字段');
+        return;
+      }
+      const res=await fetch('/api/config',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(config)
+      });
+      const data=await res.json();
+      if(data.success){
+        alert('✅ 配置保存成功');
+      }else{
+        alert('❌ 保存失败');
+      }
+    }
+
+    // 从 KV 加载配置
+    async function loadConfig(){
+      const res=await fetch('/api/config');
+      const data=await res.json();
+      if(data.success&&data.config){
+        accountId.value=data.config.accountId||'';
+        pagesToken.value=data.config.pagesToken||'';
+        zoneToken.value=data.config.zoneToken||'';
+        output.textContent='✅ 配置加载成功';
+      }else{
+        output.textContent='⚠️ 未找到保存的配置';
       }
     }
 
@@ -189,6 +234,11 @@
     refreshDomainsBtn.addEventListener('click',loadDomains);
     loadProjectsBtn.addEventListener('click',loadProjects);
     projectSelect.addEventListener('change',loadDomains);
+    saveConfigBtn.addEventListener('click',saveConfig);
+    loadConfigBtn.addEventListener('click',loadConfig);
+
+    // 页面加载时自动加载配置
+    window.addEventListener('DOMContentLoaded',loadConfig);
   </script>
 </body>
 </html>
