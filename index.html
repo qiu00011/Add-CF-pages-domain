@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>CF Pages Manager</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: Arial, sans-serif; padding: 2rem; background: #f5f7fb; color: #111; }
+    h1 { font-size: 1.6rem; margin-bottom: 1rem; }
+    section { margin-bottom: 1.5rem; padding: 1rem; background: #fff; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,.05); }
+    label { display: block; margin: .5rem 0; }
+    input, select { padding: .5rem; border: 1px solid #ddd; border-radius: 6px; width: 100%; box-sizing: border-box; }
+    button { padding: .6rem 1rem; border: none; border-radius: 6px; background: #1a73e8; color: #fff; cursor: pointer; }
+    button.secondary { background: #6b7280; }
+    pre { white-space: pre-wrap; word-break: break-word; padding: .75rem; border-radius: 6px; background: #f3f4f6; border: 1px solid #e5e7eb; }
+  </style>
+</head>
+<body>
+  <h1>Cloudflare Pages Manager</h1>
+
+  <section id="auth-section">
+    <label>Account ID:
+      <input id="accountId" type="text" placeholder="Account ID" />
+    </label>
+  </section>
+
+  <section id="projects-section" style="display:none;">
+    <h2>Projects</h2>
+    <label>Pages Projects
+      <select id="projectsSelect"></select>
+    </label>
+    <button id="loadProjectsBtn" style="margin-top:.5rem;">Load Projects</button>
+
+    <h3 style="margin-top:1rem;">Add Custom Domain</h3>
+    <label>Domain
+      <input id="addDomainInput" type="text" placeholder="example.com" />
+    </label>
+    <button id="addDomainBtn" style="margin-top:.25rem;">Add Domain</button>
+
+    <h3 style="margin-top:1rem;">Remove Custom Domain</h3>
+    <label>Domain
+      <input id="removeDomainInput" type="text" placeholder="sub.example.com" />
+    </label>
+    <button id="removeDomainBtn" style="margin-top:.25rem;" class="secondary">Remove Domain</button>
+
+    <h3 style="margin-top:1rem;">Output</h3>
+    <pre id="output" aria-live="polite"></pre>
+  </section>
+
+  <script type="module">
+    // Frontend logic: interacts with Cloudflare Pages Functions proxy at /api
+    const accountIdInput = document.getElementById('accountId');
+    const projectsSection = document.getElementById('projects-section');
+    const projectsSelect = document.getElementById('projectsSelect');
+    const loadProjectsBtn = document.getElementById('loadProjectsBtn');
+    const addDomainInput = document.getElementById('addDomainInput');
+    const addDomainBtn = document.getElementById('addDomainBtn');
+    const removeDomainInput = document.getElementById('removeDomainInput');
+    const removeDomainBtn = document.getElementById('removeDomainBtn');
+    const outputPre = document.getElementById('output');
+
+    async function proxyRequest(path, method='GET', body=null) {
+      const resp = await fetch(path, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: body ? JSON.stringify(body) : null
+      });
+      const json = await resp.json().catch(() => ({}));
+      return { ok: resp.ok, status: resp.status, json };
+    }
+
+    async function loadProjects() {
+      const accountId = accountIdInput.value.trim();
+      if (!accountId) { alert('请输入 Account ID'); return; }
+      const path = '/api/accounts/' + encodeURIComponent(accountId) + '/projects';
+      // 使用 Cloudflare Pages Functions 代理
+      const res = await proxyRequest(path, 'GET');
+      if (res.ok) {
+        const projects = Array.isArray(res.json.projects) ? res.json.projects : [];
+        projectsSelect.innerHTML = '';
+        projects.forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p.id;
+          opt.textContent = p.name || p.id;
+          projectsSelect.appendChild(opt);
+        });
+        projectsSection.style.display = 'block';
+        outputPre.textContent = JSON.stringify(res.json, null, 2);
+      } else {
+        outputPre.textContent = JSON.stringify(res.json, null, 2);
+      }
+    }
+
+    async function addDomain() {
+      const accountId = accountIdInput.value.trim();
+      const projectId = projectsSelect.value;
+      const domain = addDomainInput.value.trim();
+      if (!accountId || !projectId || !domain) { alert('请提供账户、项目和域名'); return; }
+      const path = `/api/accounts/${encodeURIComponent(accountId)}/projects/${encodeURIComponent(projectId)}/custom_domains`;
+      const res = await proxyRequest(path, 'POST', { domain });
+      outputPre.textContent = JSON.stringify(res.json, null, 2);
+    }
+
+    async function removeDomain() {
+      const accountId = accountIdInput.value.trim();
+      const projectId = projectsSelect.value;
+      const domain = removeDomainInput.value.trim();
+      if (!accountId || !projectId || !domain) { alert('请提供账户、项目和域名'); return; }
+      const path = `/api/accounts/${encodeURIComponent(accountId)}/projects/${encodeURIComponent(projectId)}/custom_domains/${encodeURIComponent(domain)}`;
+      const res = await proxyRequest(path, 'DELETE');
+      outputPre.textContent = JSON.stringify(res.json, null, 2);
+    }
+
+    loadProjectsBtn.addEventListener('click', loadProjects);
+    addDomainBtn.addEventListener('click', addDomain);
+    removeDomainBtn.addEventListener('click', removeDomain);
+  </script>
+</body>
+</html>
