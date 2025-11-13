@@ -98,8 +98,51 @@ export async function onRequest(context){
     });
   }
   
+  // 删除域名 + DNS 记录
   if(projectName&&domain&&request.method==='DELETE'){
-    return await proxy(`https://api.cloudflare.com/client/v4/accounts/${finalAccId}/pages/projects/${projectName}/domains/${domain}`,'DELETE',null,pagesToken);
+    const deleteResp=await fetch(`https://api.cloudflare.com/client/v4/accounts/${finalAccId}/pages/projects/${projectName}/domains/${domain}`,{
+      method:'DELETE',
+      headers:{'Authorization':`Bearer ${pagesToken}`}
+    });
+    const deleteData=await deleteResp.json();
+    
+    // 如果有 Zone Token，同时删除 DNS 记录
+    if(deleteData.success&&zoneToken){
+      const parts=domain.split('.');
+      const parentDomain=parts.slice(-2).join('.');
+      
+      // 获取 Zone ID
+      const zonesResp=await fetch(`https://api.cloudflare.com/client/v4/zones?name=${parentDomain}`,{
+        headers:{'Authorization':`Bearer ${zoneToken}`}
+      });
+      const zonesData=await zonesResp.json();
+      
+      if(zonesData.success&&zonesData.result?.length>0){
+        const zoneId=zonesData.result[0].id;
+        
+        // 查找对应的 DNS 记录
+        const dnsListResp=await fetch(`https://api.cloudflare.com/client/v4/zones/${zoneId}/dns_records?type=CNAME&name=${domain}`,{
+          headers:{'Authorization':`Bearer ${zoneToken}`}
+        });
+        const dnsListData=await dnsListResp.json();
+        
+        if(dnsListData.success&&dnsListData.result?.length>0){
+          // 删除找到的 DNS 记录
+          const recordId=dnsListData.result[0].id;
+          const deleteDnsResp=await fetch(`https://api.cloudflare.com/client/v4/zones/${zoneId}/dns_records/${recordId}`,{
+            method:'DELETE',
+            headers:{'Authorization':`Bearer ${zoneToken}`}
+          });
+          const deleteDnsData=await deleteDnsResp.json();
+          deleteData.dns_deleted=deleteDnsData.success;
+        }
+      }
+    }
+    
+    return new Response(JSON.stringify(deleteData),{
+      status:deleteResp.status,
+      headers:{'Content-Type':'application/json','Access-Control-Allow-Origin':'*'}
+    });
   }
   
   return jsonErr('无效操作',400);
