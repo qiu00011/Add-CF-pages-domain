@@ -81,7 +81,6 @@
 - **Zone** → **DNS** → **Edit** ✅
 **🎯 Zone Resources：**
 - **Include** → **Specific zone** → 选择要管理的域名
-- 或选择 **All zones** 管理所有域名
 
 **✅ 完成：**
 - 点击 **Continue to summary** → **Create Token**
