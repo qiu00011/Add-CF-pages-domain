@@ -3,6 +3,24 @@ export async function onRequest(context){
   const url=new URL(request.url);
   const path=url.pathname;
   
+  // 处理登录认证
+  if(path==='/api/auth'&&request.method==='POST'){
+    const body=await request.json();
+    const password=body.password;
+    const correctPassword=env.PASSWORD||'admin';
+    
+    if(password===correctPassword){
+      return new Response(JSON.stringify({success:true}),{
+        headers:{'Content-Type':'application/json','Access-Control-Allow-Origin':'*'}
+      });
+    }else{
+      return new Response(JSON.stringify({success:false}),{
+        status:401,
+        headers:{'Content-Type':'application/json','Access-Control-Allow-Origin':'*'}
+      });
+    }
+  }
+  
   // 处理配置保存/加载
   if(path==='/api/config'){
     if(request.method==='POST'){
@@ -98,7 +116,6 @@ export async function onRequest(context){
     });
   }
   
-  // 删除域名 + DNS 记录
   if(projectName&&domain&&request.method==='DELETE'){
     const deleteResp=await fetch(`https://api.cloudflare.com/client/v4/accounts/${finalAccId}/pages/projects/${projectName}/domains/${domain}`,{
       method:'DELETE',
@@ -106,12 +123,10 @@ export async function onRequest(context){
     });
     const deleteData=await deleteResp.json();
     
-    // 如果有 Zone Token，同时删除 DNS 记录
     if(deleteData.success&&zoneToken){
       const parts=domain.split('.');
       const parentDomain=parts.slice(-2).join('.');
       
-      // 获取 Zone ID
       const zonesResp=await fetch(`https://api.cloudflare.com/client/v4/zones?name=${parentDomain}`,{
         headers:{'Authorization':`Bearer ${zoneToken}`}
       });
@@ -120,14 +135,12 @@ export async function onRequest(context){
       if(zonesData.success&&zonesData.result?.length>0){
         const zoneId=zonesData.result[0].id;
         
-        // 查找对应的 DNS 记录
         const dnsListResp=await fetch(`https://api.cloudflare.com/client/v4/zones/${zoneId}/dns_records?type=CNAME&name=${domain}`,{
           headers:{'Authorization':`Bearer ${zoneToken}`}
         });
         const dnsListData=await dnsListResp.json();
         
         if(dnsListData.success&&dnsListData.result?.length>0){
-          // 删除找到的 DNS 记录
           const recordId=dnsListData.result[0].id;
           const deleteDnsResp=await fetch(`https://api.cloudflare.com/client/v4/zones/${zoneId}/dns_records/${recordId}`,{
             method:'DELETE',
