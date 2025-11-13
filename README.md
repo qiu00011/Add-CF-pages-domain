@@ -53,8 +53,9 @@
 用于添加/删除 Pages 项目的自定义域名。
 
 权限设置：
+- **Account → Cloudflare Pages → Read**
 - **Account → Cloudflare Pages → Edit**
-
+- **Account Resources → Include → Specific account → 选择你的账户**  
 创建完成后复制保存。
 
 ### 2️⃣ DNS 管理 Token
@@ -62,7 +63,6 @@
 
 权限设置：
 - **Zone → DNS → Edit**  
-- **Account Resources → Include → Specific account → 选择你的账户**  
 - **Zone Resources → Include → Specific zone → 选择要管理的域名**
 
 ---
