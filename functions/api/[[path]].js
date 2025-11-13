@@ -3,7 +3,6 @@ export async function onRequest(context){
   const url=new URL(request.url);
   const path=url.pathname;
   
-  // 登录认证
   if(path==='/api/auth'&&request.method==='POST'){
     const body=await request.json();
     const password=body.password;
@@ -21,7 +20,6 @@ export async function onRequest(context){
     }
   }
   
-  // 配置保存/加载
   if(path==='/api/config'){
     if(request.method==='POST'){
       const config=await request.json();
@@ -102,17 +100,15 @@ export async function onRequest(context){
     });
   }
   
-  // 获取域名列表
   if(projectName&&!domain&&request.method==='GET'){
     return await proxy(`https://api.cloudflare.com/client/v4/accounts/${finalAccId}/pages/projects/${projectName}/domains`,'GET',null,pagesToken);
   }
   
-  // 添加域名 + DNS（增强版，支持错误处理）
+  // 添加域名 + DNS（简单版）
   if(projectName&&!domain&&request.method==='POST'){
     const body=await request.json();
     const domainName=body.name;
     
-    // 获取项目的 Pages 域名
     const projectResp=await fetch(`https://api.cloudflare.com/client/v4/accounts/${finalAccId}/pages/projects/${projectName}`,{
       headers:{'Authorization':`Bearer ${pagesToken}`}
     });
@@ -126,7 +122,6 @@ export async function onRequest(context){
       }
     }
     
-    // 添加域名到 Pages
     const addResp=await fetch(`https://api.cloudflare.com/client/v4/accounts/${finalAccId}/pages/projects/${projectName}/domains`,{
       method:'POST',
       headers:{'Authorization':`Bearer ${pagesToken}`,'Content-Type':'application/json'},
@@ -134,84 +129,32 @@ export async function onRequest(context){
     });
     const addData=await addResp.json();
     
-    // 增强 DNS 创建逻辑
     if(addData.success&&zoneToken){
-      try{
-        const parts=domainName.split('.');
-        const parentDomain=parts.slice(-2).join('.');
+      const parts=domainName.split('.');
+      const parentDomain=parts.slice(-2).join('.');
+      
+      const zonesResp=await fetch(`https://api.cloudflare.com/client/v4/zones?name=${parentDomain}`,{
+        headers:{'Authorization':`Bearer ${zoneToken}`}
+      });
+      const zonesData=await zonesResp.json();
+      
+      if(zonesData.success&&zonesData.result?.length>0){
+        const zoneId=zonesData.result[0].id;
         
-        // 查找 Zone
-        const zonesResp=await fetch(`https://api.cloudflare.com/client/v4/zones?name=${parentDomain}`,{
-          headers:{'Authorization':`Bearer ${zoneToken}`}
+        const dnsResp=await fetch(`https://api.cloudflare.com/client/v4/zones/${zoneId}/dns_records`,{
+          method:'POST',
+          headers:{'Authorization':`Bearer ${zoneToken}`,'Content-Type':'application/json'},
+          body:JSON.stringify({
+            type:'CNAME',
+            name:domainName,
+            content:pagesDevDomain,
+            proxied:true
+          })
         });
-        const zonesData=await zonesResp.json();
-        
-        if(zonesData.success&&zonesData.result?.length>0){
-          const zoneId=zonesData.result[0].id;
-          
-          // 先检查是否已存在同名记录
-          const checkResp=await fetch(
-            `https://api.cloudflare.com/client/v4/zones/${zoneId}/dns_records?type=CNAME&name=${domainName}`,
-            {headers:{'Authorization':`Bearer ${zoneToken}`}}
-          );
-          const checkData=await checkResp.json();
-          
-          if(checkData.success&&checkData.result?.length>0){
-            // 记录已存在，更新它
-            const recordId=checkData.result[0].id;
-            const updateResp=await fetch(
-              `https://api.cloudflare.com/client/v4/zones/${zoneId}/dns_records/${recordId}`,
-              {
-                method:'PATCH',
-                headers:{'Authorization':`Bearer ${zoneToken}`,'Content-Type':'application/json'},
-                body:JSON.stringify({
-                  type:'CNAME',
-                  name:domainName,
-                  content:pagesDevDomain,
-                  proxied:true
-                })
-              }
-            );
-            const updateData=await updateResp.json();
-            addData.dns_created=updateData.success;
-            addData.dns_updated=true;
-            addData.dns_target=pagesDevDomain;
-            if(!updateData.success){
-              addData.dns_error=updateData.errors?JSON.stringify(updateData.errors):'DNS 记录更新失败';
-            }
-          }else{
-            // 创建新记录
-            const dnsResp=await fetch(
-              `https://api.cloudflare.com/client/v4/zones/${zoneId}/dns_records`,
-              {
-                method:'POST',
-                headers:{'Authorization':`Bearer ${zoneToken}`,'Content-Type':'application/json'},
-                body:JSON.stringify({
-                  type:'CNAME',
-                  name:domainName,
-                  content:pagesDevDomain,
-                  proxied:true
-                })
-              }
-            );
-            const dnsData=await dnsResp.json();
-            addData.dns_created=dnsData.success;
-            addData.dns_target=pagesDevDomain;
-            if(!dnsData.success){
-              addData.dns_error=dnsData.errors?JSON.stringify(dnsData.errors):'DNS 记录创建失败';
-            }
-          }
-        }else{
-          addData.dns_created=false;
-          addData.dns_error=`未找到域名 ${parentDomain} 的 Zone`;
-        }
-      }catch(e){
-        addData.dns_created=false;
-        addData.dns_error=e.message||'DNS 操作异常';
+        const dnsData=await dnsResp.json();
+        addData.dns_created=dnsData.success;
+        addData.dns_target=pagesDevDomain;
       }
-    }else if(addData.success&&!zoneToken){
-      addData.dns_created=false;
-      addData.dns_error='未提供 Zone API Token';
     }
     
     return new Response(JSON.stringify(addData),{
@@ -220,7 +163,6 @@ export async function onRequest(context){
     });
   }
   
-  // 删除域名 + DNS
   if(projectName&&domain&&request.method==='DELETE'){
     const deleteResp=await fetch(`https://api.cloudflare.com/client/v4/accounts/${finalAccId}/pages/projects/${projectName}/domains/${domain}`,{
       method:'DELETE',
@@ -229,36 +171,31 @@ export async function onRequest(context){
     const deleteData=await deleteResp.json();
     
     if(deleteData.success&&zoneToken){
-      try{
-        const parts=domain.split('.');
-        const parentDomain=parts.slice(-2).join('.');
+      const parts=domain.split('.');
+      const parentDomain=parts.slice(-2).join('.');
+      
+      const zonesResp=await fetch(`https://api.cloudflare.com/client/v4/zones?name=${parentDomain}`,{
+        headers:{'Authorization':`Bearer ${zoneToken}`}
+      });
+      const zonesData=await zonesResp.json();
+      
+      if(zonesData.success&&zonesData.result?.length>0){
+        const zoneId=zonesData.result[0].id;
         
-        const zonesResp=await fetch(`https://api.cloudflare.com/client/v4/zones?name=${parentDomain}`,{
+        const dnsListResp=await fetch(`https://api.cloudflare.com/client/v4/zones/${zoneId}/dns_records?type=CNAME&name=${domain}`,{
           headers:{'Authorization':`Bearer ${zoneToken}`}
         });
-        const zonesData=await zonesResp.json();
+        const dnsListData=await dnsListResp.json();
         
-        if(zonesData.success&&zonesData.result?.length>0){
-          const zoneId=zonesData.result[0].id;
-          
-          const dnsListResp=await fetch(`https://api.cloudflare.com/client/v4/zones/${zoneId}/dns_records?type=CNAME&name=${domain}`,{
+        if(dnsListData.success&&dnsListData.result?.length>0){
+          const recordId=dnsListData.result[0].id;
+          const deleteDnsResp=await fetch(`https://api.cloudflare.com/client/v4/zones/${zoneId}/dns_records/${recordId}`,{
+            method:'DELETE',
             headers:{'Authorization':`Bearer ${zoneToken}`}
           });
-          const dnsListData=await dnsListResp.json();
-          
-          if(dnsListData.success&&dnsListData.result?.length>0){
-            const recordId=dnsListData.result[0].id;
-            const deleteDnsResp=await fetch(`https://api.cloudflare.com/client/v4/zones/${zoneId}/dns_records/${recordId}`,{
-              method:'DELETE',
-              headers:{'Authorization':`Bearer ${zoneToken}`}
-            });
-            const deleteDnsData=await deleteDnsResp.json();
-            deleteData.dns_deleted=deleteDnsData.success;
-          }
+          const deleteDnsData=await deleteDnsResp.json();
+          deleteData.dns_deleted=deleteDnsData.success;
         }
-      }catch(e){
-        deleteData.dns_deleted=false;
-        deleteData.dns_error=e.message;
       }
     }
     
