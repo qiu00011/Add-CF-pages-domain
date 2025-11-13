@@ -96,6 +96,3 @@
   - Variable name: `CONFIG_KV`
   - Namespace: 选择刚创建的命名空间
 - 保存设置后重新部署一次
-
-### 5. 验证 Functions 是否工作
-访问  
