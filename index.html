@@ -3,169 +3,151 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>Pages Console</title>
+  <title>CF Pages 域名管理控制台</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      /* macOS 风格静态配色 - 浅色 (护眼蓝) */
-      --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-      --bg-overlay: radial-gradient(circle at 10% 20%, rgba(216, 235, 255, 0.6) 0%, transparent 20%), 
-                    radial-gradient(circle at 90% 80%, rgba(220, 210, 255, 0.6) 0%, transparent 20%);
-
+      /* Cloudflare 品牌配色体系 */
+      --cf-orange: #F38020;
+      --cf-orange-hover: #d96e16;
+      --cf-dark: #1D2737;
+      
+      /* 浅色模式 (Light) - 暖橙云朵风格 */
+      /* 渐变：从 CF 橙的极淡色 -> 纯白 -> 极淡蓝 */
+      --bg-gradient: linear-gradient(135deg, #fff0e6 0%, #ffffff 50%, #f0f9ff 100%);
+      
       --glass-sidebar: rgba(255, 255, 255, 0.65);
       --glass-content: rgba(255, 255, 255, 0.85);
-      --glass-border: rgba(0, 0, 0, 0.05);
+      --glass-border: rgba(243, 128, 32, 0.15); /* 淡淡的橙色边框 */
       
-      --text-primary: #1d1d1f;
-      --text-secondary: #86868b;
+      --text-primary: #1D2737;
+      --text-secondary: #6c757d;
       
-      --input-bg: rgba(0, 0, 0, 0.03);
-      --input-border: rgba(0, 0, 0, 0.1);
-      --input-focus: #0071e3;
+      --input-bg: rgba(255, 255, 255, 0.6);
+      --input-border: rgba(0, 0, 0, 0.08);
+      --input-focus: var(--cf-orange);
       
-      --accent-color: #0071e3;
+      --shadow-window: 0 24px 60px rgba(243, 128, 32, 0.1);
+      --radius-window: 20px;
+      --radius-element: 10px;
+      
+      --accent-color: var(--cf-orange);
       --danger-color: #ff3b30;
       --success-color: #34c759;
-      
-      --shadow-window: 0 24px 48px rgba(0, 0, 0, 0.12);
-      --radius-window: 18px;
-      --radius-element: 10px;
     }
 
     [data-theme="dark"] {
-      /* macOS 风格静态配色 - 深色 (午夜灰) */
-      --bg-gradient: linear-gradient(135deg, #232526 0%, #414345 100%);
-      --bg-overlay: radial-gradient(circle at 50% 0%, rgba(50, 70, 90, 0.4) 0%, transparent 60%);
-
-      --glass-sidebar: rgba(40, 40, 40, 0.6);
-      --glass-content: rgba(30, 30, 30, 0.6);
-      --glass-border: rgba(255, 255, 255, 0.1);
-
+      /* 深色模式 (Dark) - 深邃机房风格 */
+      /* 渐变：暗黑橙 -> 深蓝灰 */
+      --bg-gradient: linear-gradient(135deg, #2c1a10 0%, #1D2737 100%);
+      
+      --glass-sidebar: rgba(20, 20, 20, 0.7);
+      --glass-content: rgba(30, 30, 30, 0.7);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      
       --text-primary: #f5f5f7;
-      --text-secondary: #86868b;
-
+      --text-secondary: #9ca3af;
+      
       --input-bg: rgba(255, 255, 255, 0.08);
       --input-border: transparent;
-      --input-focus: #2997ff;
+      --input-focus: #fabe87;
       
-      --accent-color: #2997ff;
-      --shadow-window: 0 40px 80px rgba(0, 0, 0, 0.5);
+      --shadow-window: 0 40px 80px rgba(0, 0, 0, 0.6);
     }
 
-    * { box-sizing: border-box; transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease; }
+    * { box-sizing: border-box; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); }
 
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
       margin: 0;
       padding: 0;
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      /* 静态背景，不再闪烁 */
       background: var(--bg-gradient);
-      position: relative;
+      background-attachment: fixed;
       color: var(--text-primary);
       overflow: hidden;
     }
-    
-    /* 添加一层淡淡的光晕，增加质感但不刺眼 */
-    body::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: var(--bg-overlay);
-      pointer-events: none;
-      z-index: 0;
-    }
 
-    /* 主窗口 */
+    /* 窗口容器 */
     .app-window {
-      width: 92%;
+      width: 90%;
       max-width: 1100px;
       height: 85vh;
       max-height: 850px;
       display: flex;
-      /* 强磨砂玻璃效果 */
       background: var(--glass-sidebar);
-      backdrop-filter: blur(50px) saturate(180%);
-      -webkit-backdrop-filter: blur(50px) saturate(180%);
+      backdrop-filter: blur(40px) saturate(120%);
+      -webkit-backdrop-filter: blur(40px) saturate(120%);
       border-radius: var(--radius-window);
       box-shadow: var(--shadow-window);
       border: 1px solid var(--glass-border);
       position: relative;
       z-index: 10;
-      overflow: hidden;
       flex-direction: row;
       opacity: 0;
-      transform: scale(0.98);
-      animation: openWindow 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+      transform: scale(0.95);
+      animation: fadeInScale 0.5s forwards;
     }
 
-    @keyframes openWindow {
+    @keyframes fadeInScale {
       to { opacity: 1; transform: scale(1); }
     }
 
-    /* 左侧边栏 */
+    /* 左侧栏 */
     .sidebar {
       width: 280px;
-      background: rgba(255,255,255,0.02); /* 极淡的叠加 */
       border-right: 1px solid var(--glass-border);
       padding: 28px 20px;
       display: flex;
       flex-direction: column;
       flex-shrink: 0;
+      background: rgba(255,255,255,0.02);
     }
 
-    /* 右侧内容 */
-    .content-area {
-      flex: 1;
-      background: var(--glass-content);
-      padding: 40px 50px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-    }
-
-    /* 品牌区 */
+    /* 品牌 Logo 区域 */
     .brand-area {
       display: flex;
       align-items: center;
       gap: 12px;
-      margin-bottom: 30px;
+      margin-bottom: 28px;
       padding-bottom: 20px;
       border-bottom: 1px solid var(--glass-border);
     }
 
     .brand-icon {
-      width: 40px;
-      height: 40px;
+      width: 42px;
+      height: 42px;
       border-radius: 10px;
       object-fit: cover;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 12px rgba(243, 128, 32, 0.3);
     }
 
     .brand-text {
-      font-weight: 600;
-      font-size: 18px;
+      font-weight: 700;
+      font-size: 16px;
       color: var(--text-primary);
+      letter-spacing: -0.5px;
     }
 
-    /* 控件样式 */
-    .control-group { margin-bottom: 16px; }
+    /* 表单控件 */
+    .control-group { margin-bottom: 18px; }
 
     label {
       display: block;
       font-size: 12px;
-      font-weight: 500;
+      font-weight: 600;
       color: var(--text-secondary);
-      margin-bottom: 6px;
-      padding-left: 2px;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
     input, select {
       width: 100%;
-      padding: 10px 12px;
+      padding: 12px 14px;
       font-size: 13px;
       border-radius: var(--radius-element);
       border: 1px solid var(--input-border);
@@ -173,73 +155,39 @@
       color: var(--text-primary);
       outline: none;
       font-family: inherit;
-      transition: all 0.2s;
     }
     
     input:focus, select:focus {
       background: var(--input-bg);
       border-color: var(--input-focus);
-      box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15);
+      box-shadow: 0 0 0 3px rgba(243, 128, 32, 0.15);
     }
+    
+    input::placeholder { color: rgba(150,150,150,0.5); }
 
-    /* 侧边栏底部工具 */
-    .sidebar-footer {
-      margin-top: auto;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding-top: 15px;
-      border-top: 1px solid var(--glass-border);
-    }
-
-    .theme-btn {
-      background: none;
-      border: none;
-      font-size: 20px;
-      cursor: pointer;
-      color: var(--text-secondary);
-      padding: 5px;
-      border-radius: 6px;
-      transition: color 0.2s;
-    }
-    .theme-btn:hover { color: var(--text-primary); background: var(--input-bg); }
-
-    /* 主内容标题 */
-    .content-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-      margin-bottom: 24px;
-    }
-
-    .content-header h2 {
-      margin: 0;
-      font-size: 28px;
-      font-weight: 700;
-      letter-spacing: -0.5px;
-    }
-
-    /* 按钮系统 */
+    /* 按钮 */
     .btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: 8px 16px;
+      padding: 10px 16px;
       border-radius: 8px;
       font-size: 13px;
-      font-weight: 500;
+      font-weight: 600;
       cursor: pointer;
       border: none;
       transition: all 0.2s;
     }
     
-    .btn:active { transform: scale(0.97); }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
 
     .btn.primary {
-      background: var(--accent-color);
+      background: linear-gradient(135deg, var(--cf-orange) 0%, #e67e22 100%);
       color: white;
+      box-shadow: 0 4px 12px rgba(243, 128, 32, 0.3);
     }
-    .btn.primary:hover { filter: brightness(1.1); }
+    .btn.primary:hover { box-shadow: 0 6px 16px rgba(243, 128, 32, 0.4); }
     
     .btn.secondary {
       background: var(--input-bg);
@@ -254,71 +202,120 @@
     }
     .btn.danger:hover { background: var(--danger-color); color: white; }
 
-    .btn.block { width: 100%; margin-top: 8px; padding: 10px; }
+    .btn.block { width: 100%; margin-top: 8px; }
 
-    /* 域名列表卡片 */
+    /* 底部工具栏 */
+    .sidebar-footer {
+      margin-top: auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 15px;
+      border-top: 1px solid var(--glass-border);
+    }
+    
+    .theme-btn {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-size: 18px;
+      padding: 6px;
+      border-radius: 6px;
+      color: var(--text-secondary);
+    }
+    .theme-btn:hover { background: rgba(128,128,128,0.1); color: var(--cf-orange); }
+
+    /* 右侧内容区 */
+    .content-area {
+      flex: 1;
+      background: var(--glass-content);
+      padding: 40px 50px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .content-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .content-header h2 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    /* 域名列表容器 */
     .domain-card {
       background: var(--input-bg);
-      border-radius: 12px;
+      border-radius: 16px;
       border: 1px solid var(--input-border);
-      padding: 4px;
-      min-height: 200px;
+      padding: 8px;
+      min-height: 220px;
       margin-bottom: 30px;
+      overflow-y: auto;
     }
 
     .domain-item {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 12px 16px;
-      margin-bottom: 2px;
-      border-radius: 8px;
+      padding: 14px 20px;
+      margin-bottom: 4px;
+      border-radius: 10px;
       transition: background 0.2s;
     }
-    .domain-item:hover { background: rgba(128,128,128,0.08); }
+    .domain-item:hover { background: rgba(128,128,128,0.05); }
     
     .status-tag {
       font-size: 11px;
-      padding: 2px 8px;
-      border-radius: 10px;
+      padding: 3px 10px;
+      border-radius: 20px;
       font-weight: 600;
-      margin-left: 10px;
+      margin-left: 12px;
+      letter-spacing: 0.5px;
     }
-    .tag-active { background: rgba(52, 199, 89, 0.2); color: var(--success-color); }
-    .tag-pending { background: rgba(255, 159, 10, 0.2); color: #FF9F0A; }
+    .tag-active { background: rgba(52, 199, 89, 0.15); color: var(--success-color); border: 1px solid rgba(52, 199, 89, 0.2); }
+    .tag-pending { background: rgba(255, 159, 10, 0.15); color: #FF9F0A; border: 1px solid rgba(255, 159, 10, 0.2); }
 
     /* 操作区网格 */
     .action-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 20px;
-      margin-bottom: 20px;
+      gap: 24px;
+      margin-bottom: 24px;
     }
     
     .action-box {
       background: var(--input-bg);
       border: 1px solid var(--input-border);
-      padding: 16px;
-      border-radius: 12px;
+      padding: 20px;
+      border-radius: 16px;
     }
 
-    .input-row { display: flex; gap: 8px; margin-top: 8px; }
+    .input-row { display: flex; gap: 10px; margin-top: 10px; }
 
-    /* 日志区 */
+    /* 日志终端 */
     .terminal {
       background: #1e1e1e;
-      color: #27c93f;
+      color: #cfd2d6;
       padding: 16px;
-      border-radius: 10px;
-      font-family: 'Menlo', monospace;
+      border-radius: 12px;
+      font-family: 'Menlo', 'Monaco', monospace;
       font-size: 12px;
-      line-height: 1.5;
-      height: 120px;
+      line-height: 1.6;
+      height: 140px;
       overflow-y: auto;
       border: 1px solid rgba(0,0,0,0.1);
+      white-space: pre-wrap;
     }
+    .terminal::-webkit-scrollbar { width: 6px; }
+    .terminal::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
 
-    /* 登录覆盖层 */
+    /* 登录遮罩 */
     .login-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -330,37 +327,41 @@
     }
     
     .login-card {
-      width: 320px;
-      background: rgba(255, 255, 255, 0.6);
-      backdrop-filter: blur(40px);
-      padding: 32px;
+      width: 340px;
+      background: rgba(255, 255, 255, 0.75);
+      backdrop-filter: blur(50px);
+      padding: 40px 32px;
       border-radius: 24px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+      box-shadow: 0 30px 60px rgba(243, 128, 32, 0.15);
       text-align: center;
-      border: 1px solid rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.4);
     }
-    [data-theme="dark"] .login-card { background: rgba(40, 40, 40, 0.6); border-color: rgba(255,255,255,0.05); }
+    [data-theme="dark"] .login-card { background: rgba(30, 30, 30, 0.75); border-color: rgba(255,255,255,0.1); box-shadow: 0 30px 60px rgba(0,0,0,0.5); }
 
-    .hidden { display: none !important; }
-    .shake { animation: shake 0.4s; }
-    @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
-
-    /* Toast */
+    /* Toast 通知 */
     .toast {
       position: fixed;
-      top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px);
-      background: rgba(30,30,30,0.9);
+      top: 24px; left: 50%; transform: translateX(-50%) translateY(-100px);
+      background: rgba(29, 39, 55, 0.95);
       color: white;
-      padding: 10px 20px;
-      border-radius: 30px;
+      padding: 12px 24px;
+      border-radius: 50px;
       font-size: 14px;
       font-weight: 500;
       z-index: 200;
       opacity: 0;
-      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+      transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
     .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+    /* 辅助类 */
+    .hidden { display: none !important; }
+    .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+    @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
 
     /* 移动端适配 */
     @media (max-width: 768px) {
@@ -368,109 +369,116 @@
       .sidebar { width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--glass-border); padding: 20px; }
       .content-area { padding: 20px; }
       .action-grid { grid-template-columns: 1fr; }
-      .brand-area { margin-bottom: 15px; }
     }
   </style>
 </head>
 <body>
 
-  <div id="toast" class="toast">Message</div>
+  <!-- 通知提示 -->
+  <div id="toast" class="toast">
+    <span id="toastIcon">ℹ️</span>
+    <span id="toastMsg">通知消息</span>
+  </div>
 
   <!-- 登录界面 -->
   <div id="loginScreen" class="login-overlay">
     <div class="login-card">
-      <img src="https://image.hyeri.us.kg/icon.png" style="width:72px; height:72px; border-radius:16px; box-shadow:0 8px 20px rgba(0,0,0,0.15); margin-bottom:20px;">
-      <h3 style="margin:0 0 8px;">Welcome Back</h3>
-      <p style="color:var(--text-secondary); font-size:13px; margin:0 0 24px;">Please authenticate to continue</p>
-      <input type="password" id="loginPassword" placeholder="Password" style="text-align:center; margin-bottom:16px;">
-      <button id="loginBtn" class="btn primary block" style="height:40px;">Unlock</button>
-      <div id="errorMsg" style="color:var(--danger-color); font-size:12px; margin-top:10px; opacity:0;">Incorrect Password</div>
+      <img src="https://image.hyeri.us.kg/icon.png" style="width:72px; height:72px; border-radius:18px; box-shadow:0 10px 25px rgba(243, 128, 32, 0.25); margin-bottom:24px;">
+      <h3 style="margin:0 0 8px; font-size:20px;">欢迎回来</h3>
+      <p style="color:var(--text-secondary); font-size:13px; margin:0 0 28px;">Cloudflare Pages 域名管理终端</p>
+      
+      <input type="password" id="loginPassword" placeholder="请输入访问密码" style="text-align:center; margin-bottom:16px;">
+      <button id="loginBtn" class="btn primary block" style="height:44px; font-size:14px;">解 锁</button>
+      <div id="errorMsg" style="color:var(--danger-color); font-size:12px; margin-top:12px; opacity:0;">密码错误，请重试</div>
     </div>
   </div>
 
   <!-- 主界面 -->
   <div id="mainScreen" class="app-window hidden">
     
-    <!-- 左侧边栏 (Sidebar) -->
+    <!-- 左侧边栏：配置与导航 -->
     <div class="sidebar">
       <div class="brand-area">
         <img src="https://image.hyeri.us.kg/icon.png" class="brand-icon">
-        <div class="brand-text">Console</div>
+        <div class="brand-text">Pages 控制台</div>
       </div>
 
       <div style="flex:1; overflow-y:auto;">
         <div class="control-group">
-          <label>ACCOUNT ID</label>
-          <input id="accountId" placeholder="Account ID" />
+          <label>账户 ID (Account ID)</label>
+          <input id="accountId" placeholder="Cloudflare Account ID" />
         </div>
         <div class="control-group">
-          <label>PAGES TOKEN</label>
-          <input id="pagesToken" type="password" placeholder="API Token" />
+          <label>Pages API 令牌</label>
+          <input id="pagesToken" type="password" placeholder="Pages Token" />
         </div>
         <div class="control-group">
-          <label>ZONE TOKEN</label>
-          <input id="zoneToken" type="password" placeholder="API Token" />
+          <label>Zone API 令牌</label>
+          <input id="zoneToken" type="password" placeholder="Zone Token" />
         </div>
         <div style="display:flex; gap:10px; margin-top:20px;">
-          <button id="loadConfigBtn" class="btn secondary" style="flex:1;">Load</button>
-          <button id="saveConfigBtn" class="btn primary" style="flex:1;">Save</button>
+          <button id="loadConfigBtn" class="btn secondary" style="flex:1;">读取</button>
+          <button id="saveConfigBtn" class="btn primary" style="flex:1;">保存</button>
         </div>
 
         <hr style="border:0; border-top:1px solid var(--glass-border); margin:24px 0;">
 
         <div class="control-group">
-          <label>SELECT PROJECT</label>
-          <select id="projectSelect"><option value="">-- Select --</option></select>
-          <button id="loadProjectsBtn" class="btn secondary block">Fetch Projects</button>
+          <label>选择项目</label>
+          <select id="projectSelect"><option value="">-- 请先加载项目 --</option></select>
+          <button id="loadProjectsBtn" class="btn secondary block">获取项目列表</button>
         </div>
       </div>
 
       <div class="sidebar-footer">
-        <span style="font-size:12px; color:var(--text-secondary);">v2.0.1 Stable</span>
-        <button id="themeToggle" class="theme-btn">◑</button>
+        <span style="font-size:12px; color:var(--text-secondary);">v2.2 CF-Theme</span>
+        <button id="themeToggle" class="theme-btn" title="切换主题">🌓</button>
       </div>
     </div>
 
-    <!-- 右侧内容 (Content) -->
+    <!-- 右侧内容区：业务操作 -->
     <div class="content-area">
       <div class="content-header">
-        <h2>Domain Manager</h2>
-        <button id="refreshDomainsBtn" class="btn secondary">Refresh List</button>
+        <h2>域名管理</h2>
+        <button id="refreshDomainsBtn" class="btn secondary">刷新列表</button>
       </div>
 
       <div id="domainList" class="domain-card">
-        <div style="display:flex; align-items:center; justify-content:center; height:100%; color:var(--text-secondary); min-height:190px;">
-          Waiting for project selection...
+        <div style="display:flex; align-items:center; justify-content:center; height:100%; color:var(--text-secondary); flex-direction:column; gap:10px;">
+          <span style="font-size:24px; opacity:0.3;">☁️</span>
+          <span>等待选择项目...</span>
         </div>
       </div>
 
       <div class="action-grid">
         <div class="action-box">
-          <label style="color:var(--accent-color);">ADD DOMAIN (AUTO DNS)</label>
+          <label style="color:var(--cf-orange);">添加域名 (自动配置 DNS)</label>
           <div class="input-row">
-            <input id="addDomainInput" placeholder="sub.example.com" />
-            <button id="addDomainBtn" class="btn primary">Add</button>
+            <input id="addDomainInput" placeholder="例如: blog.example.com" />
+            <button id="addDomainBtn" class="btn primary">添加</button>
           </div>
         </div>
         <div class="action-box">
-          <label style="color:var(--danger-color);">REMOVE DOMAIN</label>
+          <label style="color:var(--danger-color);">移除域名</label>
           <div class="input-row">
-            <input id="removeDomainInput" placeholder="Domain to remove" />
-            <button id="removeDomainBtn" class="btn danger">Remove</button>
+            <input id="removeDomainInput" placeholder="输入要移除的域名" />
+            <button id="removeDomainBtn" class="btn danger">删除</button>
           </div>
         </div>
       </div>
 
-      <label>TERMINAL OUTPUT</label>
-      <div id="output" class="terminal">System ready. Waiting for user input...</div>
+      <label>运行日志</label>
+      <div id="output" class="terminal">系统就绪...</div>
     </div>
   </div>
 
   <script>
-    // UI 交互逻辑
+    // --- UI 交互逻辑 ---
     const themeToggle = document.getElementById('themeToggle');
     const html = document.documentElement;
     const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toastMsg');
+    const toastIcon = document.getElementById('toastIcon');
     let toastTimer;
 
     // 主题切换
@@ -480,8 +488,12 @@
     });
 
     // Toast 提示
-    function showToast(msg) {
-      toast.textContent = msg;
+    function showToast(msg, type = 'info') {
+      toastMsg.textContent = msg;
+      if (type === 'success') toastIcon.textContent = '✅';
+      else if (type === 'error') toastIcon.textContent = '❌';
+      else toastIcon.textContent = 'ℹ️';
+      
       toast.classList.add('show');
       clearTimeout(toastTimer);
       toastTimer = setTimeout(() => toast.classList.remove('show'), 3000);
@@ -493,11 +505,11 @@
       const card = document.querySelector('.login-card');
       err.style.opacity = 1;
       card.classList.remove('shake');
-      void card.offsetWidth;
+      void card.offsetWidth; // 触发重绘
       card.classList.add('shake');
     }
 
-    // --- 核心业务逻辑 (保持完全一致) ---
+    // --- 核心业务逻辑 (API 调用保持不变) ---
     const loginScreen=document.getElementById('loginScreen');
     const mainScreen=document.getElementById('mainScreen');
     const loginPassword=document.getElementById('loginPassword');
@@ -555,7 +567,7 @@
     const output=document.getElementById('output');
 
     async function apiCall(path,method='GET',body=null){
-      output.innerHTML += `<div>> ${method} ${path}...</div>`;
+      output.innerHTML += `<div>> 请求: ${method} ${path}...</div>`;
       output.scrollTop = output.scrollHeight;
       try{
         const resp=await fetch(path,{
@@ -568,22 +580,22 @@
           },
           body:body?JSON.stringify(body):null
         });
-        const data=await resp.json().catch(()=>({error:'Invalid Response'}));
-        output.innerHTML += `<div style="color:${resp.ok?'#4cd964':'#ff3b30'}">> Result: ${data.success?'Success':'Fail'}</div>`;
+        const data=await resp.json().catch(()=>({error:'响应解析失败'}));
+        output.innerHTML += `<div style="color:${resp.ok?'#4cd964':'#ff3b30'}">> 结果: ${data.success?'成功':'失败'}</div>`;
         output.scrollTop = output.scrollHeight;
         return{ok:resp.ok,data};
       }catch(e){
-        output.innerHTML += `<div style="color:#ff3b30">> Error: ${e.message}</div>`;
+        output.innerHTML += `<div style="color:#ff3b30">> 错误: ${e.message}</div>`;
         return{ok:false,data:null};
       }
     }
 
     async function saveConfig(){
       const config={accountId:accountId.value.trim(),pagesToken:pagesToken.value.trim(),zoneToken:zoneToken.value.trim()};
-      if(!config.accountId||!config.pagesToken||!config.zoneToken) return showToast('Please fill all fields');
+      if(!config.accountId||!config.pagesToken||!config.zoneToken) return showToast('请填写所有配置项', 'error');
       const res=await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(config)});
       const data=await res.json();
-      showToast(data.success?'Configuration Saved':'Save Failed');
+      showToast(data.success?'配置已保存':'保存失败', data.success?'success':'error');
     }
 
     async function loadConfig(){
@@ -593,13 +605,13 @@
         accountId.value=data.config.accountId||'';
         pagesToken.value=data.config.pagesToken||'';
         zoneToken.value=data.config.zoneToken||'';
-        output.innerHTML += `<div>> Config loaded from server</div>`;
+        output.innerHTML += `<div>> 已从云端加载配置</div>`;
       }
     }
 
     async function loadProjects(){
       const acc=accountId.value.trim();
-      if(!acc||!pagesToken.value.trim()) return showToast('Missing Credentials');
+      if(!acc||!pagesToken.value.trim()) return showToast('请先填写账户ID和Token', 'error');
       const res=await apiCall(`/api/accounts/${encodeURIComponent(acc)}/projects`);
       if(res.ok&&res.data.success){
         const projects=res.data.result||[];
@@ -608,6 +620,7 @@
           projectSelect.value=projects[0].name;
           await loadDomains();
         }
+        showToast('项目列表已刷新', 'success');
       }
     }
 
@@ -620,7 +633,7 @@
       if(res.ok&&res.data.success){
         const domains=res.data.result||[];
         if(domains.length===0){
-          domainList.innerHTML='<div style="display:flex;height:100%;align-items:center;justify-content:center;color:var(--text-secondary);">No domains found</div>';
+          domainList.innerHTML='<div style="display:flex;height:100%;align-items:center;justify-content:center;color:var(--text-secondary);">暂无绑定域名</div>';
         }else{
           domains.forEach(d=>{
             const isAct = d.status==='active';
@@ -628,10 +641,10 @@
             el.className='domain-item';
             el.innerHTML=`
               <div style="display:flex;align-items:center;">
-                <span style="font-weight:500">${d.name}</span>
-                <span class="status-tag ${isAct?'tag-active':'tag-pending'}">${isAct?'Active':'Verifying'}</span>
+                <span style="font-weight:600">${d.name}</span>
+                <span class="status-tag ${isAct?'tag-active':'tag-pending'}">${isAct?'已激活':'验证中'}</span>
               </div>
-              <button class="btn secondary" style="padding:4px 10px;font-size:12px;" onclick="confirmAndRemove('${encodeURIComponent(d.name)}')">Disconnect</button>
+              <button class="btn secondary" style="padding:6px 12px;font-size:12px;" onclick="confirmAndRemove('${encodeURIComponent(d.name)}')">断开连接</button>
             `;
             domainList.appendChild(el);
           });
@@ -641,15 +654,15 @@
 
     window.confirmAndRemove=async function(domainEncoded){
       const domain=decodeURIComponent(domainEncoded);
-      if(!confirm(`Delete domain ${domain}?`))return;
+      if(!confirm(`确定要删除域名 ${domain} 吗?`))return;
       const acc=accountId.value.trim();
       const proj=projectSelect.value;
       const res=await apiCall(`/api/accounts/${encodeURIComponent(acc)}/projects/${encodeURIComponent(proj)}/domains/${domain}`,'DELETE');
       if(res.ok&&res.data.success){
         await loadDomains();
-        showToast('Domain removed');
+        showToast('域名已删除', 'success');
       } else {
-        showToast('Remove failed');
+        showToast('删除失败', 'error');
       }
     };
 
@@ -657,29 +670,29 @@
       const acc=accountId.value.trim();
       const proj=projectSelect.value;
       const domain=addDomainInput.value.trim();
-      if(!acc||!proj||!domain) return showToast('Check Inputs');
+      if(!acc||!proj||!domain) return showToast('请检查输入', 'error');
       const res=await apiCall(`/api/accounts/${encodeURIComponent(acc)}/projects/${encodeURIComponent(proj)}/domains`,'POST',{name:domain});
       if(res.ok&&res.data.success){
         addDomainInput.value='';
         await loadDomains();
-        showToast(res.data.dns_created?'Domain & DNS Created':'Domain Added');
-      } else { showToast('Add Failed'); }
+        showToast(res.data.dns_created?'域名及DNS记录创建成功':'域名添加成功', 'success');
+      } else { showToast('添加失败', 'error'); }
     });
 
     removeDomainBtn.addEventListener('click',async()=>{
       const acc=accountId.value.trim();
       const proj=projectSelect.value;
       const domain=removeDomainInput.value.trim();
-      if(!acc||!proj||!domain) return showToast('Input Domain');
+      if(!acc||!proj||!domain) return showToast('请输入域名', 'error');
       const res=await apiCall(`/api/accounts/${encodeURIComponent(acc)}/projects/${encodeURIComponent(proj)}/domains/${domain}`,'DELETE');
       if(res.ok&&res.data.success){
         removeDomainInput.value='';
         await loadDomains();
-        showToast('Domain Deleted');
-      } else { showToast('Delete Failed'); }
+        showToast('域名已删除', 'success');
+      } else { showToast('删除失败', 'error'); }
     });
 
-    refreshDomainsBtn.addEventListener('click',() => { loadDomains(); showToast('Refreshed'); });
+    refreshDomainsBtn.addEventListener('click',() => { loadDomains(); showToast('列表已刷新'); });
     loadProjectsBtn.addEventListener('click',loadProjects);
     projectSelect.addEventListener('change',loadDomains);
     saveConfigBtn.addEventListener('click',saveConfig);
