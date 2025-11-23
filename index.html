@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>iCloud Pages 控制台</title>
+  <title>CF Pages 控制台</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -14,16 +14,16 @@
       
       /* Light Mode Variables */
       --bg-base: #F5F7FA;
-      --glass-sidebar: rgba(255, 255, 255, 0.65);
-      --glass-content: rgba(255, 255, 255, 0.85);
-      --glass-border: rgba(255, 255, 255, 0.4);
+      --glass-sidebar: rgba(255, 255, 255, 0.75); /* 稍微增加不透明度以适应清晰背景 */
+      --glass-content: rgba(255, 255, 255, 0.90);
+      --glass-border: rgba(255, 255, 255, 0.5);
       --text-primary: #1d1d1f;
       --text-secondary: #86868b;
-      --input-bg: rgba(255, 255, 255, 0.5);
+      --input-bg: rgba(255, 255, 255, 0.6);
       --input-border: rgba(0, 0, 0, 0.1);
-      --overlay-color: rgba(255, 255, 255, 0.2); /* 浅色遮罩 */
+      --overlay-color: rgba(255, 255, 255, 0); /* 去除遮罩颜色，背景更透亮 */
       
-      --shadow-window: 0 24px 60px rgba(0, 0, 0, 0.1);
+      --shadow-window: 0 24px 60px rgba(0, 0, 0, 0.15); /* 加深阴影以区分清晰背景 */
       --shadow-card: 0 6px 16px rgba(0, 0, 0, 0.04);
       --radius-window: 24px;
       --radius-element: 14px;
@@ -32,17 +32,17 @@
     [data-theme="dark"] {
       /* Dark Mode Variables */
       --bg-base: #000000;
-      --glass-sidebar: rgba(30, 30, 30, 0.6);
-      --glass-content: rgba(20, 20, 20, 0.7);
+      --glass-sidebar: rgba(30, 30, 30, 0.75);
+      --glass-content: rgba(20, 20, 20, 0.85);
       --glass-border: rgba(255, 255, 255, 0.1);
       --text-primary: #F5F5F7;
       --text-secondary: #98989d;
-      --input-bg: rgba(255, 255, 255, 0.1);
+      --input-bg: rgba(255, 255, 255, 0.15);
       --input-border: transparent;
-      --overlay-color: rgba(0, 0, 0, 0.4); /* 深色遮罩 */
+      --overlay-color: rgba(0, 0, 0, 0.2); /* 深色模式保留轻微遮罩 */
       
       --accent-blue: #0A84FF;
-      --shadow-window: 0 40px 80px rgba(0, 0, 0, 0.5);
+      --shadow-window: 0 40px 80px rgba(0, 0, 0, 0.6);
     }
 
     * { box-sizing: border-box; transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1); }
@@ -61,7 +61,7 @@
       position: relative;
     }
 
-    /* === 自定义背景层 (Method A) === */
+    /* === 自定义背景层 === */
     #custom-bg-layer {
       position: fixed;
       top: 0; left: 0; width: 100%; height: 100%;
@@ -82,13 +82,12 @@
       pointer-events: none;
     }
 
-    /* 智能遮罩 (确保文字可读) */
+    /* 智能遮罩 (已移除模糊，仅保留极淡的颜色调节) */
     #bg-overlay {
       position: fixed;
       top: 0; left: 0; width: 100%; height: 100%;
       background: var(--overlay-color);
-      backdrop-filter: blur(20px); /* 让背景稍微模糊，突出前景 */
-      -webkit-backdrop-filter: blur(20px);
+      /* backdrop-filter: blur(20px);  <-- 已移除此行，背景不再模糊 */
       z-index: -1;
       pointer-events: none;
     }
@@ -102,9 +101,10 @@
       height: 85vh;
       max-height: 850px;
       display: flex;
-      background: var(--glass-sidebar); /* 半透明以透出背景 */
-      backdrop-filter: blur(40px) saturate(160%);
-      -webkit-backdrop-filter: blur(40px) saturate(160%);
+      /* 窗口本身保持磨砂玻璃效果，以便看清文字 */
+      background: var(--glass-sidebar);
+      backdrop-filter: blur(50px) saturate(180%);
+      -webkit-backdrop-filter: blur(50px) saturate(180%);
       border-radius: var(--radius-window);
       box-shadow: var(--shadow-window);
       border: 1px solid var(--glass-border);
@@ -271,13 +271,14 @@
     }
     [data-theme="dark"] .log-box { background: rgba(255,255,255,0.05); }
 
+    /* 登录层 */
     .login-overlay {
       position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(30px);
+      background: rgba(255, 255, 255, 0); /* 登录背景完全透明，显示底层壁纸 */
+      backdrop-filter: blur(10px); /* 仅登录时稍微模糊背景，聚焦注意力 */
       z-index: 100; display: flex; align-items: center; justify-content: center;
     }
-    [data-theme="dark"] .login-overlay { background: rgba(0, 0, 0, 0.3); }
+    [data-theme="dark"] .login-overlay { background: rgba(0, 0, 0, 0.2); }
 
     .login-card {
       width: 340px;
@@ -285,8 +286,10 @@
       padding: 40px; border-radius: 28px;
       box-shadow: 0 30px 60px rgba(0,0,0,0.15); text-align: center;
       border: 1px solid var(--glass-border);
+      backdrop-filter: blur(40px);
     }
 
+    /* 灵动岛 Toast */
     .island-toast {
       position: fixed; top: 24px; left: 50%; transform: translateX(-50%) translateY(-150%);
       background: rgba(20,20,20,0.9); color: white;
@@ -315,9 +318,9 @@
   <!-- 背景层：默认渐变 -->
   <div id="default-bg-gradient"></div>
   
-  <!-- 背景层：JS动态插入的图片或视频将位于此处 -->
+  <!-- 背景层：JS动态插入的图片或视频将位于此处，且清晰无模糊 -->
   
-  <!-- 背景层：磨砂遮罩 -->
+  <!-- 背景层：极淡遮罩 (无模糊) -->
   <div id="bg-overlay"></div>
 
   <!-- Toast 通知 -->
@@ -345,7 +348,7 @@
     <div class="sidebar">
       <div class="brand-area">
         <img src="https://image.hyeri.us.kg/icon.png" class="brand-icon">
-        <div class="brand-text">iCloud Console</div>
+        <div class="brand-text">CF Cloud Console</div>
       </div>
 
       <div class="scroll-container">
@@ -362,7 +365,7 @@
           <input id="zoneToken" type="password" placeholder="••••••••••••" />
         </div>
         
-        <!-- 新增：方式 A 配置入口 -->
+        <!-- 自定义背景入口 -->
         <div class="form-group">
           <label style="color:var(--accent-blue);">自定义背景 (直链)</label>
           <input id="backgroundUrl" placeholder="图片或视频 URL (mp4/mov)" />
@@ -425,13 +428,12 @@
   </div>
 
   <script>
-    // --- 背景处理逻辑 (Method A) ---
+    // --- 背景处理逻辑 ---
     const bgContainer = document.body;
     let currentBgEl = null;
 
     function applyBackground(url) {
       if (!url) {
-        // 如果清空了输入框，移除现有背景，显示默认渐变
         if(currentBgEl) { 
           currentBgEl.style.opacity = 0; 
           setTimeout(() => { if(currentBgEl) currentBgEl.remove(); currentBgEl = null; }, 1000); 
@@ -439,10 +441,8 @@
         return;
       }
 
-      // 判断文件类型
       const isVideo = /\.(mp4|webm|mov)(\?|$)/i.test(url);
       
-      // 创建新元素
       let newEl;
       if (isVideo) {
         newEl = document.createElement('video');
@@ -457,14 +457,9 @@
       }
 
       newEl.id = 'custom-bg-layer';
-      
-      // 插入到默认背景和遮罩层之间
       document.body.insertBefore(newEl, document.getElementById('bg-overlay'));
-      
-      // 淡入效果
       requestAnimationFrame(() => { newEl.style.opacity = 1; });
 
-      // 清理旧背景
       if (currentBgEl) {
         currentBgEl.style.opacity = 0;
         setTimeout(() => { if(currentBgEl) currentBgEl.remove(); }, 1500);
@@ -547,11 +542,10 @@
       loadConfig();
     }
 
-    // 变量声明
     const accountId=document.getElementById('accountId');
     const pagesToken=document.getElementById('pagesToken');
     const zoneToken=document.getElementById('zoneToken');
-    const backgroundUrl=document.getElementById('backgroundUrl'); // 自定义背景输入框
+    const backgroundUrl=document.getElementById('backgroundUrl');
     const projectSelect=document.getElementById('projectSelect');
     const loadProjectsBtn=document.getElementById('loadProjectsBtn');
     const domainList=document.getElementById('domainList');
@@ -593,10 +587,9 @@
         accountId:accountId.value.trim(),
         pagesToken:pagesToken.value.trim(),
         zoneToken:zoneToken.value.trim(),
-        backgroundUrl:backgroundUrl.value.trim() // 保存背景URL
+        backgroundUrl:backgroundUrl.value.trim()
       };
       
-      // 立即应用背景
       applyBackground(config.backgroundUrl);
 
       if(!config.accountId||!config.pagesToken||!config.zoneToken) return showToast('核心配置不完整', 'error');
@@ -613,9 +606,8 @@
         accountId.value=data.config.accountId||'';
         pagesToken.value=data.config.pagesToken||'';
         zoneToken.value=data.config.zoneToken||'';
-        backgroundUrl.value=data.config.backgroundUrl||''; // 填充背景URL输入框
+        backgroundUrl.value=data.config.backgroundUrl||'';
         
-        // 加载时应用背景
         if(data.config.backgroundUrl) {
           applyBackground(data.config.backgroundUrl);
         }
